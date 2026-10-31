@@ -1,70 +1,270 @@
-# Data Project Documentation Template
+# Operation Last Mile: Diagnosing a €4.2M Delivery Crisis with SQL
 
-A production-ready GitHub template for documenting data analysis, SQL, dashboard, pipeline, and machine learning projects - with built-in examples, narrative guidance, and adaptable structure.
+> Four executives had four theories about why deliveries were failing.
+> I tested every one of them against 15,000 shipments in SQL Server.
+> The biggest answer came from a single yes/no column.
 
-## What This Is
+> **Tools:** SQL Server (T-SQL) · Views · Window functions · CASE logic
 
-This is a **cloneable template repository** designed to help data analysts, scientists, and engineers document their projects the way senior practitioners do - with clarity, structure, and storytelling.
 
-Every section includes:
-- Plain-language instructions on what to write
-- Examples of strong vs. weak documentation  
-- Guidance on when to keep or delete a section
+> [!NOTE]
+> **Simulated Case Study.** This project is based on *Operation Last Mile*, a Case Study from DWD Academy. CorridexLogistics, its clients, staff and the brief are simulated to mimick real world problem in the Logistics and Transportation Industry, and the dataset is synthetic. Any resemblance to real organisations or people is coincidental. The SQL, analysis and recommendations are my own work.
+> The Dataset might be synthetic but the problem, analytical and technical reasoning and decision is real and true!!!
 
-It works for **any kind of data project:**
-- SQL analysis
-- Python / R exploratory analysis
-- Dashboards (Tableau, Power BI, Looker)
-- Data pipelines / ETL workflows
-- Machine learning / predictive modeling
-- Mixed-method projects
+---
 
-## Why This Exists
+## Overall Summary
 
-After hundreds of portfolio reviews, the pattern was clear: **the projects that stand out aren't always the most technically sophisticated - they're the ones where the README tells a clear story.**
+| | |
+| --- | --- |
+| **On-time rate** | 70.1% against an 85% SLA (−14.9 pp), and falling: 74.8% in 2024 → 65.3% in 2025 |
+| **Contract at risk** | €4.2M per year (Hartwell Group, largest client) |
+| **Strongest driver** | Stock not ready at dispatch drops on-time delivery from **74.5% to 47.4%** |
+| **Problem sites** | Amsterdam and Warsaw warehouses: ~25% stock-issue rate vs 6.3% in Berlin |
+| **Problem assignment** | Vans on cross-border routes: **41%** on time |
+| **Verdict** | An operational problem in two warehouses and one assignment rule, not a pricing problem |
 
-Most data professionals never learn how to document their work. This template fixes that.
+---
 
-## How to Use It
+## 1. The business problem
 
-1. Click **"Use this template"** (green button at the top)
-2. Name your new repo after your actual project
-3. Copy the contents of `README_TEMPLATE.md` into your new project's README
-4. Delete folders and sections you don't need
-5. Remove all placeholder text and comments before publishing
+Corridex Logistics is a pan-European freight company with 5 warehouses, 15 routes, 20 drivers and 12 clients. Every contract promises **85% on-time delivery**.
 
-Full walkthrough: [HOW_TO_USE.md](HOW_TO_USE.md)
+Its largest client, Hartwell Group (~23% of volume), issued a formal SLA breach notice. Corridex had two consecutive quarters to get above 85%, or lose a **€4.2M** contract.
 
-## What's Inside
+Four stakeholders each had a theory:
 
-The template includes:
-- **README_TEMPLATE.md** - The fill-in-the-blank documentation template
-- **project_metadata.yml** - Optional machine-readable metadata
-- **Complete folder structure** - Pre-built folders for data, notebooks, scripts, queries, reports, visuals, and docs
-- **.gitignore** - Pre-configured to exclude data files
+| Stakeholder | Theory |
+| --- | --- |
+| Operations Manager | A small group of drivers and high-risk routes cause most delays |
+| Warehouse Head | Stock isn't ready when shipments are scheduled |
+| Regional Director | One or two city pairs drag the average down |
+| Finance Director | Standard-tier shipments are deprioritised to protect margins |
 
-## Who This Is For
+**My role:** lead analyst. My job was to find what the data says, not to confirm anyone's theory.
 
-- **Beginners** building their first portfolio project
-- **Early-career analysts** cleaning up existing projects
-- **Career switchers** who have technical skills but need to frame their work
-- **Experienced practitioners** who want a consistent structure
+---
 
-## Features
+## 2. The data
 
-✅ Section-by-section guidance with examples  
-✅ Supports SQL, Python, R, dashboards, pipelines, ML  
-✅ Includes ERD section for SQL projects  
-✅ Pre-built .gitignore for data projects  
-✅ Optional YAML metadata for portfolio automation  
-✅ Delete-what-you-don't-use philosophy  
+A star schema in SQL Server: one fact table and five dimensions.
 
-## License
+| Table | Type | Grain | Rows |
+| --- | --- | --- | --- |
+| `fact_shipments` | Fact | One row per shipment | 15,000 |
+| `dim_customer` | Dimension | One row per customer | 12 |
+| `dim_driver` | Dimension | One row per driver | 20 |
+| `dim_route` | Dimension | One row per route | 15 |
+| `dim_warehouse` | Dimension | One row per warehouse | 5 |
+| `dim_date` | Dimension | One row per calendar date | 731 (2024–2025) |
 
-MIT License - use this however you want.
+---
 
-## Credits
+## 3. My approach
 
-Created by **Issy BI**
+```mermaid
+flowchart LR
+    A[Explore the schema] --> B[Foundation view<br/>vw_ShipmentDetail]
+    B --> C[Summary views<br/>route · warehouse · driver · customer]
+    C --> D[6 deliverables<br/>short queries on views]
+    D --> E[Risk score view<br/>vw_RiskScore]
+    E --> F[Verdict and<br/>recommendations]
+```
 
-If this helped you, consider starring the repo or sharing it with someone building their data portfolio.
+**Step 1: Explore first.** Row counts, the delivery-status split and the date range. Knowing the grain of the data prevents confident wrong answers later.
+
+**Step 2: Build one foundation view.** `vw_ShipmentDetail` joins all six tables once and adds a single derived column:
+
+```sql
+CREATE OR ALTER VIEW vw_ShipmentDetail AS
+SELECT
+	-- Shipment identifiers
+    f.shipment_id,
+    f.shipment_date,
+    f.promised_delivery_date,
+    f.actual_delivery_date,
+    f.expected_transit_days,
+
+    -- Delivery outcome
+    f.delivery_status,
+    f.delay_days,
+    f.delivery_attempt_count,
+    f.failed_delivery_reason,
+    f.is_returned,
+
+    -- Shipment attributes
+    f.shipment_category,
+    f.shipment_weight_kg,
+    f.shipment_value_eur,
+    f.priority_tier,
+
+    -- Stock & warehouse at dispatch
+    f.stock_ready_flag,
+    f.stock_issue_type,
+    f.warehouse_delay_hours,
+
+    -- Customer
+    f.customer_id,
+    c.customer_name,
+    c.customer_segment,
+    c.contract_tier,
+    c.sla_threshold_days,
+    c.country                       AS customer_country,
+    c.city                          AS customer_city,
+
+    -- Driver
+    f.driver_id,
+    d.driver_name,
+    d.vehicle_type,
+    d.experience_years,
+    d.performance_rating,
+    d.employment_type,
+
+    -- Route
+    f.route_id,
+    r.route_name,
+    r.origin_city,
+    r.destination_city,
+    r.route_type,
+    r.risk_level                    AS route_risk_level,
+    r.distance_km,
+    r.standard_transit_days,
+
+    -- Warehouse
+    f.warehouse_id,
+    w.warehouse_name,
+    w.city                          AS warehouse_city,
+    w.region,
+
+    -- Date dimensions
+    dt.year,
+    dt.quarter,
+    dt.month_number,
+    dt.month_name,
+    dt.day_of_week,
+    dt.is_weekend,
+    dt.is_public_holiday,
+
+    -- Derived: on-time flag (1 = on-time, 0 = late or failed)
+    -- Use this in every aggregation instead of filtering by status
+    CASE WHEN f.delivery_status = 'On-Time' THEN 1 ELSE 0 END AS on_time_flag
+FROM
+	fact_shipments f
+INNER JOIN dim_customer   c   ON f.customer_id = c.customer_id
+INNER JOIN dim_driver     d   ON f.driver_id     = d.driver_id
+INNER JOIN dim_route      r   ON f.route_id      = r.route_id
+INNER JOIN dim_warehouse  w   ON f.warehouse_id  = w.warehouse_id
+INNER JOIN dim_date       dt  ON f.shipment_date = dt.date_id;
+GO
+
+SELECT *
+FROM vw_ShipmentDetail
+```
+
+With a 1 or 0 on every row, any on-time rate becomes `SUM(on_time_flag) / COUNT(*)`, grouped by whatever lens the question needs.
+
+**Step 3: Build a summary view per lens.** Each deliverable then becomes a few short, readable queries, and every number uses the same definition of "on time."
+
+| View | Purpose |
+| --- | --- |
+| `vw_ShipmentDetail` | Flat, fully joined shipment record (foundation for everything) |
+| `vw_RoutePerformance` | On-time %, average delay, late and failed counts per route |
+| `vw_WarehousePerformance` | Stock-issue rate, issue types and delay hours per warehouse |
+| `vw_DriverPerformance` | Driver KPIs plus experience bands |
+| `vw_CustomerPerformance` | Client-level on-time %, delay days and shipment value |
+| `vw_RiskScore` | Composite risk score and tier for every shipment |
+
+**Techniques used:** multi-table joins, views, `RANK() OVER`, `SUM(COUNT(*)) OVER()` for percent-of-total, `PARTITION BY`, `CASE` banding and scoring, `CAST` to avoid integer-division errors, `COALESCE` for NULL handling.
+
+---
+
+## 4. What I found
+
+| # | Deliverable | Question | Key finding |
+| --- | --- | --- | --- |
+| 1 | Situation assessment | How bad is it? | 70.1% on time; Q4 2025 hit 60.8%. The decline is year on year. |
+| 2 | Geographic breakdown | Is it everywhere? | Domestic 79.4% vs cross-border 61.1%. All 9 cross-border routes underperform; worst is Warsaw–Madrid at 43.7%. |
+| 3 | Warehouse and stock | Do shipments leave on time? | Stock not ready = 47.4% on time vs 74.5% when ready. Amsterdam (24.5%) and Warsaw (25%) have 3–4× Berlin's issue rate. |
+| 4 | Driver performance | Who or what underperforms? | Van + cross-border = 41%. The three worst drivers are all junior contract Van drivers on Warsaw cross-border routes. |
+| 5 | Customer impact | Who absorbs the damage? | Hartwell is 3rd worst (62.0%). Polaris (60.6%) and Solano (60.9%) are worse and haven't escalated yet. |
+| 6 | Risk score | Can we predict failure? | Solano has 35.7% of shipments in the HIGH RISK tier; the two clients meeting SLA have 0%. |
+
+**The connection that tied it together:** all 3,389 Hartwell shipments run through Amsterdam. Their poor service isn't a client problem; it's an Amsterdam problem.
+
+**The bright spot:** Medipharma Europe (85.1%) and Veltrade (85.6%) already meet SLA, both on Berlin domestic routes. The target is achievable.
+
+---
+
+## 5. Testing the four theories
+
+| Stakeholder | Verdict | Evidence |
+| --- | --- | --- |
+| Warehouse Head | **Closest** | Stock readiness is the strongest single predictor: a 27-point on-time gap |
+| Operations Manager | Partly right | Poor drivers share a profile (junior, contract, Van, cross-border). It's an assignment system, not individuals |
+| Regional Director | Partly right | Concentration is real, but it's the cross-border route *type*, not one or two city pairs |
+| Finance Director | Weakest | Critical tier runs at 75.7%, still 9.3 pp below SLA. Priority doesn't explain the breach |
+
+---
+
+## 6. Delivery risk score
+
+A composite score per shipment, built in `vw_RiskScore`, weighted by how strongly each factor showed up in the analysis.
+
+| Factor | Points |
+| --- | --- |
+| Stock not ready at dispatch | +5 |
+| Driver experience 0–2 yrs / 3–5 yrs | +4 / +2 |
+| Route risk High / Medium | +3 / +1 |
+| Van on a cross-border route | +3 |
+| Cross-border route | +2 |
+| Amsterdam or Warsaw warehouse | +2 |
+| Priority Standard / Critical | +1 / −2 |
+
+**Tiers:** ≥10 HIGH RISK · 5–9 MEDIUM RISK · <5 LOW RISK (max score 20)
+
+> **Caveat:** the weights are judgment-based, derived from the findings rather than fitted by a model.
+
+---
+
+## 7. Recommendations to the COO
+
+1. **Audit Amsterdam and Warsaw warehouse operations within two weeks.** Name an accountable owner per site and track stock readiness as a weekly KPI. This is the highest-leverage fix and directly lifts Hartwell's numbers.
+2. **Remove Vans from cross-border routes this week.** A scheduling change, not a hiring change. Vans go domestic; Trucks and HGVs take cross-border.
+3. **Brief the Hartwell account team before quarter end** with the data, the changes underway and a realistic recovery timeline.
+
+---
+
+## 8. Repository contents
+
+| File | Description |
+| --- | --- |
+| `Analysis Query.sql` | Full SQL script: schema exploration, 6 views and all queries for the 6 deliverables, with business-context comments |
+| `Executive Summary.pdf` | One-page findings and recommendations written for the COO |
+| `Project Brief.pdf` | The original case brief: background, stakeholder theories, data dictionary |
+
+### How to run
+
+1. Load the six tables into a SQL Server database.
+2. Update the `USE` statement at the top of the script to your database name.
+3. Run the script top to bottom. Views are created with `CREATE OR ALTER`, so re-running is safe.
+
+---
+
+## 9. What I'd do next
+
+- Validate the risk-score weights with a logistic regression on the same features.
+- Formalise the data-quality rules from the brief (status casing, NULL delay hours, negative shipment values, capped delivery attempts) into a dedicated staging view.
+- Build a Power BI dashboard on top of the views for weekly stock-readiness and route monitoring.
+
+---
+
+## Key takeaways
+
+- **Test theories; don't confirm them.** Every stakeholder was partly right. Only testing all four side by side showed the full picture.
+- **Build the foundation before the analysis.** One well-designed view kept every metric consistent and the code readable.
+- **Study the winners, not just the losers.** Berlin proved the target was reachable.
+- **Separate system problems from people problems.** The "worst drivers" were set up to fail by how routes were assigned.
+
+---
+
+**Author:** [Your Name] · [LinkedIn] · [Medium article link]

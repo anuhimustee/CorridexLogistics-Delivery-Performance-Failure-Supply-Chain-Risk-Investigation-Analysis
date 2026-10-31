@@ -1,0 +1,13 @@
+customer_id,customer_name,customer_segment,country,city,contract_tier,sla_threshold_days,account_since,is_active
+CUS-001,Hartwell Group,Retail,United Kingdom,London,Platinum,2,2021-03-01,1
+CUS-002,Medipharma Europe,Pharmaceutical,Germany,Munich,Gold,2,2020-07-15,1
+CUS-003,Veltrade GmbH,Manufacturing,Germany,Hamburg,Silver,3,2022-01-10,1
+CUS-004,Nexon Retail,Retail,France,Paris,Gold,2,2021-11-20,1
+CUS-005,Brightbox E-Commerce,E-Commerce,Netherlands,Amsterdam,Bronze,4,2023-03-05,1
+CUS-006,Polaris Industries,Manufacturing,Poland,Warsaw,Silver,3,2022-06-18,1
+CUS-007,Solano Retail,Retail,Spain,Madrid,Gold,2,2021-08-30,1
+CUS-008,Kairos Logistics,E-Commerce,France,Lyon,Bronze,4,2023-09-12,1
+CUS-009,Nordic Pharma,Pharmaceutical,Netherlands,Amsterdam,Platinum,2,2020-02-28,1
+CUS-010,Atlas Manufacturing,Manufacturing,Germany,Berlin,Silver,3,2022-04-14,1
+CUS-011,Renova Retail,Retail,Spain,Barcelona,Bronze,4,2023-07-01,1
+CUS-012,Eastbridge Trading,E-Commerce,Poland,Krakow,Bronze,4,2023-11-15,1

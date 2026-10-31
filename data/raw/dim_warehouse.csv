@@ -1,0 +1,6 @@
+warehouse_id,warehouse_name,city,country,region,capacity_units,manager_name,is_active
+WHS-001,Corridex Amsterdam Hub,Amsterdam,Netherlands,Northern Europe,8000,Jan van der Berg,1
+WHS-002,Corridex Berlin Hub,Berlin,Germany,Western Europe,9500,Klaus Richter,1
+WHS-003,Corridex Madrid Hub,Madrid,Spain,Southern Europe,7000,Sofia Morales,1
+WHS-004,Corridex Warsaw Hub,Warsaw,Poland,Eastern Europe,6500,Marek Kowalski,1
+WHS-005,Corridex Lyon Hub,Lyon,France,Western Europe,7500,Camille Dupont,1

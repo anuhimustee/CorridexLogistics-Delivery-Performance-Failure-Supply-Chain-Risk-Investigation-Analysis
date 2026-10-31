@@ -1,0 +1,16 @@
+route_id,route_name,origin_city,destination_city,origin_country,destination_country,distance_km,standard_transit_days,route_type,risk_level,is_active
+RTE-001,Amsterdam — Berlin,Amsterdam,Berlin,Netherlands,Germany,650,2,Cross-Border,Medium,1
+RTE-002,Amsterdam — London,Amsterdam,London,Netherlands,United Kingdom,540,2,Cross-Border,Medium,1
+RTE-003,Berlin — Warsaw,Berlin,Warsaw,Germany,Poland,575,2,Cross-Border,Medium,1
+RTE-004,Berlin — Lyon,Berlin,Lyon,Germany,France,1050,3,Cross-Border,High,1
+RTE-005,Madrid — Lyon,Madrid,Lyon,Spain,France,1000,3,Cross-Border,High,1
+RTE-006,Warsaw — Madrid,Warsaw,Madrid,Poland,Spain,2900,4,Cross-Border,High,1
+RTE-007,Amsterdam — Madrid,Amsterdam,Madrid,Netherlands,Spain,1740,3,Cross-Border,High,1
+RTE-008,Lyon — Berlin,Lyon,Berlin,France,Germany,1050,3,Cross-Border,High,1
+RTE-009,Amsterdam — Amsterdam,Amsterdam,Amsterdam,Netherlands,Netherlands,80,1,Domestic,Low,1
+RTE-010,Berlin — Hamburg,Berlin,Hamburg,Germany,Germany,290,1,Domestic,Low,1
+RTE-011,Madrid — Barcelona,Madrid,Barcelona,Spain,Spain,620,1,Domestic,Low,1
+RTE-012,Warsaw — Krakow,Warsaw,Krakow,Poland,Poland,295,1,Domestic,Low,1
+RTE-013,Lyon — Paris,Lyon,Paris,France,France,465,1,Domestic,Low,1
+RTE-014,Berlin — Munich,Berlin,Munich,Germany,Germany,585,1,Domestic,Low,1
+RTE-015,Amsterdam — Warsaw,Amsterdam,Warsaw,Netherlands,Poland,1730,3,Cross-Border,High,1

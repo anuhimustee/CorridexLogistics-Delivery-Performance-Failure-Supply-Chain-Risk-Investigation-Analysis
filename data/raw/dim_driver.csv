@@ -1,0 +1,21 @@
+driver_id,driver_name,nationality,employment_type,experience_years,vehicle_type,assigned_warehouse_id,performance_rating,is_active
+DRV-001,Marco Bianchi,Italian,Permanent,8,Truck,WHS-005,4.5,1
+DRV-002,Sophie Müller,German,Permanent,11,HGV,WHS-002,4.7,1
+DRV-003,Piotr Nowak,Polish,Permanent,6,Truck,WHS-004,4.2,1
+DRV-004,Carlos Ruiz,Spanish,Permanent,9,HGV,WHS-003,4.6,1
+DRV-005,Elena Petrova,Romanian,Contract,2,Van,WHS-004,3.1,1
+DRV-006,Lars Hansen,Danish,Permanent,14,HGV,WHS-001,4.8,1
+DRV-007,Fatima Benali,French,Permanent,7,Truck,WHS-005,4.3,1
+DRV-008,Jan Kowalczyk,Polish,Contract,1,Van,WHS-004,2.8,1
+DRV-009,Anna Schmidt,German,Permanent,5,Truck,WHS-002,4.0,1
+DRV-010,Diego Lopez,Spanish,Contract,3,Van,WHS-003,3.4,1
+DRV-011,Pieter de Vries,Dutch,Permanent,10,HGV,WHS-001,4.6,1
+DRV-012,Lucie Bernard,French,Permanent,6,Truck,WHS-005,4.1,1
+DRV-013,Tomasz Wieczorek,Polish,Contract,2,Van,WHS-004,3.0,1
+DRV-014,Hannah Weber,German,Permanent,8,HGV,WHS-002,4.4,1
+DRV-015,Rafael Fernandez,Spanish,Permanent,12,HGV,WHS-003,4.7,1
+DRV-016,Nathalie Rousseau,French,Contract,1,Van,WHS-005,2.6,1
+DRV-017,Mikkel Nielsen,Danish,Permanent,4,Truck,WHS-001,3.8,1
+DRV-018,Agnieszka Kaminska,Polish,Permanent,7,Truck,WHS-004,4.2,1
+DRV-019,Bruno Leclerc,French,Contract,2,Van,WHS-005,3.2,1
+DRV-020,Stefan Hoffmann,German,Permanent,9,HGV,WHS-002,4.5,1

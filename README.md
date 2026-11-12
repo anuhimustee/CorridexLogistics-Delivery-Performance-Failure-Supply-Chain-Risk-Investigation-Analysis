@@ -26,11 +26,16 @@
 
 ---
 
-## 1. The business problem
+## 1. The Business Problem
 
 Corridex Logistics is a pan-European freight company with 5 warehouses, 15 routes, 20 drivers and 12 clients. Every contract promises **85% on-time delivery**.
 
-Its largest client, Hartwell Group (~23% of volume), issued a formal SLA breach notice. Corridex had two consecutive quarters to get above 85%, or lose a **€4.2M** contract.
+Corridex Logistics received a formal SLA breach notice from Hartwell Group, their largest client accounting for 23% of annual shipment volume. Hartwell's audit recorded a 62% on-time delivery rate against a contractual threshold of 85%. If Corridex cannot demonstrate sustained performance above 85% within two consecutive quarters, Hartwell Group will terminate the contract.
+
+Four internal stakeholders each have a theory about the root cause. None of them have looked at the data.
+
+The mandate: find what the data actually says.
+
 
 Four stakeholders each had a theory:
 
@@ -45,7 +50,7 @@ Four stakeholders each had a theory:
 
 ---
 
-## 2. The data
+## 2. The Data
 
 A star schema in SQL Server: one fact table and five dimensions.
 
@@ -60,7 +65,40 @@ A star schema in SQL Server: one fact table and five dimensions.
 
 ---
 
-## 3. My approach
+## 3. My Approach: Analysis Structure
+
+The SQL analysis follows a six-deliverable investigation structure, each building on the last.
+```
+Deliverable 1 — Situation Assessment
+Baseline KPIs: overall on-time rate, year-on-year trend,
+quarterly breakdown, priority tier performance.
+Gap to 85% SLA threshold quantified.
+
+Deliverable 2 — Geographic Breakdown
+On-time rate by route type, individual route ranking,
+origin city performance, cross-border vs domestic by year.
+Tests the Regional Director's theory.
+
+Deliverable 3 — Warehouse & Stock Analysis
+Stock readiness vs delivery outcome, warehouse ranking,
+stock issue types, Amsterdam and Warsaw deep dive.
+Tests the Warehouse Head's theory.
+
+Deliverable 4 — Driver & Route Performance
+All 20 drivers ranked, experience band analysis,
+vehicle type breakdown, Van + Cross-Border combination.
+Tests the Operations Manager's theory.
+
+Deliverable 5 — Customer Impact Analysis
+All 12 customers ranked vs SLA, contract tier analysis,
+Hartwell Group deep dive, route-level failure for key clients.
+Tests the Finance Director's theory.
+
+Deliverable 6 — Delivery Risk Score
+Composite risk score per shipment combining route risk,
+warehouse, driver experience, vehicle type, stock readiness,
+and priority tier. Validates score against actual outcomes.
+```
 
 ```mermaid
 flowchart LR
@@ -75,93 +113,8 @@ flowchart LR
 
 **Step 2: Build one foundation view.** `vw_ShipmentDetail` joins all six tables once and adds a single derived column:
 
-```sql
-CREATE OR ALTER VIEW vw_ShipmentDetail AS
-SELECT
-	-- Shipment identifiers
-    f.shipment_id,
-    f.shipment_date,
-    f.promised_delivery_date,
-    f.actual_delivery_date,
-    f.expected_transit_days,
+See the Full Analysis Scripts for that 
 
-    -- Delivery outcome
-    f.delivery_status,
-    f.delay_days,
-    f.delivery_attempt_count,
-    f.failed_delivery_reason,
-    f.is_returned,
-
-    -- Shipment attributes
-    f.shipment_category,
-    f.shipment_weight_kg,
-    f.shipment_value_eur,
-    f.priority_tier,
-
-    -- Stock & warehouse at dispatch
-    f.stock_ready_flag,
-    f.stock_issue_type,
-    f.warehouse_delay_hours,
-
-    -- Customer
-    f.customer_id,
-    c.customer_name,
-    c.customer_segment,
-    c.contract_tier,
-    c.sla_threshold_days,
-    c.country                       AS customer_country,
-    c.city                          AS customer_city,
-
-    -- Driver
-    f.driver_id,
-    d.driver_name,
-    d.vehicle_type,
-    d.experience_years,
-    d.performance_rating,
-    d.employment_type,
-
-    -- Route
-    f.route_id,
-    r.route_name,
-    r.origin_city,
-    r.destination_city,
-    r.route_type,
-    r.risk_level                    AS route_risk_level,
-    r.distance_km,
-    r.standard_transit_days,
-
-    -- Warehouse
-    f.warehouse_id,
-    w.warehouse_name,
-    w.city                          AS warehouse_city,
-    w.region,
-
-    -- Date dimensions
-    dt.year,
-    dt.quarter,
-    dt.month_number,
-    dt.month_name,
-    dt.day_of_week,
-    dt.is_weekend,
-    dt.is_public_holiday,
-
-    -- Derived: on-time flag (1 = on-time, 0 = late or failed)
-    -- Use this in every aggregation instead of filtering by status
-    CASE WHEN f.delivery_status = 'On-Time' THEN 1 ELSE 0 END AS on_time_flag
-FROM
-	fact_shipments f
-INNER JOIN dim_customer   c   ON f.customer_id = c.customer_id
-INNER JOIN dim_driver     d   ON f.driver_id     = d.driver_id
-INNER JOIN dim_route      r   ON f.route_id      = r.route_id
-INNER JOIN dim_warehouse  w   ON f.warehouse_id  = w.warehouse_id
-INNER JOIN dim_date       dt  ON f.shipment_date = dt.date_id;
-GO
-
-SELECT *
-FROM vw_ShipmentDetail
-```
-
-With a 1 or 0 on every row, any on-time rate becomes `SUM(on_time_flag) / COUNT(*)`, grouped by whatever lens the question needs.
 
 **Step 3: Build a summary view per lens.** Each deliverable then becomes a few short, readable queries, and every number uses the same definition of "on time."
 
@@ -231,15 +184,15 @@ A composite score per shipment, built in `vw_RiskScore`, weighted by how strongl
 1. **Audit Amsterdam and Warsaw warehouse operations within two weeks.** Name an accountable owner per site and track stock readiness as a weekly KPI. This is the highest-leverage fix and directly lifts Hartwell's numbers.
 2. **Remove Vans from cross-border routes this week.** A scheduling change, not a hiring change. Vans go domestic; Trucks and HGVs take cross-border.
 3. **Brief the Hartwell account team before quarter end** with the data, the changes underway and a realistic recovery timeline.
-
+The 85% threshold is achievable. Berlin warehouse is already at 83.5%. Two domestic routes run at 85.5%. The operation has the capability — it is not applying it consistently.
 ---
 
 ## 8. Repository contents
 
 | File | Description |
 | --- | --- |
-| `Analysis Query.sql` | Full SQL script: schema exploration, 6 views and all queries for the 6 deliverables, with business-context comments |
-| `Executive Summary.pdf` | One-page findings and recommendations written for the COO |
+| `Corridex Logistics.sql` | Full SQL script: schema exploration, 6 views and all queries for the 6 deliverables, with business-context comments |
+| `Deliverables 1-6` | A Single SQL scripts that answers each required Deliverables |
 | `Project Brief.pdf` | The original case brief: background, stakeholder theories, data dictionary |
 
 ### How to run
@@ -267,4 +220,7 @@ A composite score per shipment, built in `vw_RiskScore`, weighted by how strongl
 
 ---
 
-**Author:** [Your Name] · [LinkedIn] · [Medium article link]
+**Author:** Anuhi Mustapha© 2026
+
+- [LinkedIn](https://www.linkedin.com/in/anuhi-mustapha/)
+- [Medium article link](https://medium.com/@helloanuhi/operation-last-mile-diagnosing-a-4-2m-delivery-crisis-with-sql-c892fb783989)

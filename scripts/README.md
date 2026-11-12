@@ -1,8 +1,8 @@
 # Scripts
 
-﻿/* ============================================================
-   CORRIDEX LOGISTICS — DELIVERY PERFORMANCE INVESTIGATION
-   ============================================================
+﻿
+   ### CORRIDEX LOGISTICS — DELIVERY PERFORMANCE INVESTIGATION
+   
    ProjectName:  Operation Last Mile — SQL Analysis
    Dataset:  CorridexLogisticsDB (6 tables, 15,000 shipments)
    Author:   Mustapha Anuhi
@@ -37,16 +37,18 @@
 
 -- Create a Database specifically for this project
 
+```
 CREATE DATABASE CorridexLogisticsDB;
 GO
+```
 
 USE CorridexLogisticsDB
 GO
 
 
-/* ============================================================
+
    STEP 1: EXPLORE THE SCHEMA
-   ============================================================
+
    Before writing a single analytical query, understand
    the data. Know the grain of each table, the key columns,
    and how the tables connect.

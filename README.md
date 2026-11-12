@@ -4,6 +4,8 @@
 > I tested every one of them against 15,000 shipments in SQL Server.
 > The biggest answer came from a single yes/no column.
 
+![Page View](https://github.com/anuhimustee/CorridexLogistics-Delivery-Performance-Failure-Supply-Chain-Risk-Investigation-Analysis/blob/main/visuals/Screenshot%202026-11-12%20111722.png)
+
 > **Tools:** SQL Server (T-SQL) · Views · Window functions · CASE logic
 
 
